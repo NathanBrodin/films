@@ -1,14 +1,11 @@
 "use client"
 
-import { useActionState, useCallback, useEffect, useState } from "react"
-import Image from "next/image"
+import { useActionState } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { Film } from "@/db/schema"
 
-import addFilm, { deleteFilm, updateFilm } from "@/lib/actions/films"
+import { addFilm } from "@/lib/actions/films"
 import { categories } from "@/lib/categories"
-import { isValidUrl, normalizeUrl } from "@/lib/utils/url"
-import { useUrlMetadata } from "@/hooks/use-url-metadata"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -32,124 +29,21 @@ interface FilmFormProps {
 export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
   const router = useRouter()
   const pathname = usePathname()
+  const [state, action, isPending] = useActionState(addFilm, null)
 
-  const [addState, addFormAction, addPending] = useActionState(addFilm, null)
-  const [updateState, updateFormAction, updatePending] = useActionState(
-    updateFilm,
-    null
-  )
+  function onDelete() {}
 
-  const state = editingFilm ? updateState : addState
-  const formAction = editingFilm ? updateFormAction : addFormAction
-  const pending = editingFilm ? updatePending : addPending
-  const [selectedOptions, setSelectedOptions] = useState<Option[]>([])
-  const [url, setUrl] = useState("")
-  const [title, setTitle] = useState("")
-  const [author, setAuthor] = useState("")
-  const [favicon, setFavicon] = useState("")
-  const [prevPending, setPrevPending] = useState(false)
+  function resetForm() {}
 
-  const { metadata, loading, error, fetchMetadata, clearMetadata } =
-    useUrlMetadata()
-
-  const resetForm = useCallback(() => {
-    setUrl("")
-    setTitle("")
-    setAuthor("")
-    setFavicon("")
-    setSelectedOptions([])
-    clearMetadata()
-  }, [clearMetadata])
-
-  // Auto-populate fields when metadata is fetched
-  useEffect(() => {
-    if (metadata) {
-      setTitle(metadata.title)
-      setAuthor(metadata.author)
-      setFavicon(metadata.favicon)
-    }
-  }, [metadata])
-
-  // Track pending state changes
-  useEffect(() => {
-    setPrevPending(pending)
-  }, [pending])
-
-  // Reset form after successful submission
-  useEffect(() => {
-    // Detect when we just finished submitting (prevPending was true, now false)
-    // and there are no errors in the state
-    if (prevPending && !pending && !state?.errors) {
-      if (editingFilm) {
-        // Clear edit search param after successful update
-        router.push(pathname)
-      } else {
-        // Reset form for new bookmark
-        resetForm()
-      }
-    }
-  }, [prevPending, pending, state, resetForm, editingFilm, router, pathname])
-
-  // Populate form fields when editingFilm changes
-  useEffect(() => {
-    if (editingFilm) {
-      setUrl(editingFilm.url)
-      setTitle(editingFilm.title)
-      setAuthor(editingFilm.author || "")
-      setFavicon(editingFilm.favicon || "")
-
-      // Set selected categories
-      const filmCategories =
-        editingFilm.categories?.map((cat) => ({
-          label: cat,
-          value: cat,
-        })) || []
-      setSelectedOptions(filmCategories)
-    } else {
-      resetForm()
-    }
-  }, [editingFilm, resetForm])
-
-  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawUrl = e.target.value
-    setUrl(rawUrl)
-
-    if (!rawUrl.trim()) {
-      clearMetadata()
-      setTitle("")
-      setAuthor("")
-      setFavicon("")
-    }
-  }
-
-  // Debounce URL metadata fetching (only for new bookmarks)
-  useEffect(() => {
-    if (!url.trim() || editingFilm) return
-
-    const timer = setTimeout(() => {
-      const normalizedUrl = normalizeUrl(url)
-      if (isValidUrl(normalizedUrl)) {
-        fetchMetadata(normalizedUrl)
-      }
-    }, 500)
-
-    return () => clearTimeout(timer)
-  }, [url, fetchMetadata, editingFilm])
-
-  async function onDelete() {
-    if (editingFilm) {
-      deleteFilm(editingFilm.id)
-    }
-  }
+  const metadata = {}
 
   return (
     <Card className="h-fit w-full max-w-sm">
       <CardHeader>
-        <CardTitle>{editingFilm ? "Edit Bookmark" : "Add Bookmark"}</CardTitle>
+        <CardTitle>Add a new film</CardTitle>
         <CardDescription>
-          {editingFilm
-            ? "Update the bookmark details."
-            : "Add a new bookmark to your collection."}
+          If you had a film in my that was not registered in the film database,
+          here&apos; your opportunity to add it and share it with everyone.
         </CardDescription>
         {editingFilm && (
           <CardAction>
@@ -159,32 +53,20 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
           </CardAction>
         )}
       </CardHeader>
-      <form action={formAction}>
+      <form action={action}>
         {editingFilm && (
           <input type="hidden" name="id" value={editingFilm.id} />
         )}
         <CardContent className="">
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-4">
             <div className="grid gap-2">
               <Label htmlFor="url">URL</Label>
               <Input
                 name="url"
                 id="url"
-                value={url}
-                onChange={handleUrlChange}
-                placeholder="https://example.com"
+                placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+                defaultValue={editingFilm?.url || ""}
               />
-              {url && !isValidUrl(normalizeUrl(url)) && (
-                <p className="text-xs text-amber-600">
-                  Please enter a valid URL (e.g., https://example.com)
-                </p>
-              )}
-              {loading && !editingFilm && (
-                <p className="text-muted-foreground text-xs">
-                  Fetching metadata...
-                </p>
-              )}
-              {error && <p className="text-destructive text-xs">{error}</p>}
               <p className="text-destructive text-xs" role="alert">
                 {state?.errors && "url" in state.errors ? state.errors.url : ""}
               </p>
@@ -195,22 +77,18 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
                 commandProps={{
                   label: "Select categories",
                 }}
-                value={selectedOptions}
-                onChange={setSelectedOptions}
                 defaultOptions={categories}
                 placeholder="Select categories"
                 emptyIndicator={
                   <p className="text-center text-sm">No results found</p>
                 }
+                value={
+                  editingFilm?.categories?.map((cat) => ({
+                    label: cat,
+                    value: cat,
+                  })) || []
+                }
               />
-              {selectedOptions.map((option) => (
-                <input
-                  key={option.value}
-                  type="hidden"
-                  name="categories"
-                  value={option.value}
-                />
-              ))}
               <p className="text-destructive text-xs" role="alert">
                 {state?.errors && "categories" in state.errors
                   ? state.errors.categories
@@ -240,10 +118,8 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
               <Input
                 name="title"
                 id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
                 placeholder="Page title"
-                className={metadata ? "border-green-200" : ""}
+                defaultValue={editingFilm?.title || ""}
               />
               <p className="text-destructive text-xs" role="alert">
                 {state?.errors && "title" in state.errors
@@ -252,8 +128,8 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
               </p>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="favicon">
-                Favicon
+              <Label htmlFor="description">
+                Description
                 {metadata && (
                   <span className="text-muted-foreground ml-2 text-xs">
                     (auto-filled)
@@ -262,29 +138,63 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
               </Label>
               <div className="flex items-center gap-2">
                 <Input
-                  name="favicon"
-                  id="favicon"
-                  value={favicon}
-                  onChange={(e) => setFavicon(e.target.value)}
-                  placeholder="https://example.com/favicon.ico"
-                  className={metadata ? "flex-1 border-green-200" : "flex-1"}
+                  name="description"
+                  id="description"
+                  placeholder="Film description"
+                  defaultValue={editingFilm?.description || ""}
                 />
-                {favicon && (
-                  <Image
-                    src={favicon}
-                    alt="Favicon preview"
-                    width={16}
-                    height={16}
-                    className="h-4 w-4 rounded-sm border"
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none"
-                    }}
-                  />
-                )}
               </div>
               <p className="text-destructive text-xs" role="alert">
-                {state?.errors && "favicon" in state.errors
-                  ? state.errors.favicon
+                {state?.errors && "description" in state.errors
+                  ? state.errors.description
+                  : ""}
+              </p>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="thumbnail">
+                Thumbnail
+                {metadata && (
+                  <span className="text-muted-foreground ml-2 text-xs">
+                    (auto-filled)
+                  </span>
+                )}
+              </Label>
+              <Input
+                name="thumbnail"
+                id="thumbnail"
+                placeholder="https://example.com/thumbnail.jpg"
+                defaultValue={editingFilm?.thumbnail || ""}
+              />
+              <p className="text-destructive text-xs" role="alert">
+                {state?.errors && "thumbnail" in state.errors
+                  ? state.errors.thumbnail
+                  : ""}
+              </p>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="publishedAt">
+                Published Date
+                {metadata && (
+                  <span className="text-muted-foreground ml-2 text-xs">
+                    (auto-filled)
+                  </span>
+                )}
+              </Label>
+              <Input
+                name="publishedAt"
+                id="publishedAt"
+                type="date"
+                defaultValue={
+                  editingFilm?.publishedAt
+                    ? new Date(editingFilm.publishedAt)
+                        .toISOString()
+                        .split("T")[0]
+                    : ""
+                }
+              />
+              <p className="text-destructive text-xs" role="alert">
+                {state?.errors && "publishedAt" in state.errors
+                  ? state.errors.publishedAt
                   : ""}
               </p>
             </div>
@@ -300,16 +210,61 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
               <Input
                 name="author"
                 id="author"
-                value={author}
-                onChange={(e) => setAuthor(e.target.value)}
                 placeholder="Author name"
-                className={metadata ? "border-green-200" : ""}
+                defaultValue={editingFilm?.author || ""}
               />
               <p className="text-destructive text-xs" role="alert">
                 {state?.errors && "author" in state.errors
                   ? state.errors.author
                   : ""}
               </p>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="grid gap-2">
+                <Label htmlFor="views">Views</Label>
+                <Input
+                  name="views"
+                  id="views"
+                  type="number"
+                  placeholder="1000"
+                  defaultValue={editingFilm?.views || ""}
+                />
+                <p className="text-destructive text-xs" role="alert">
+                  {state?.errors && "views" in state.errors
+                    ? state.errors.views
+                    : ""}
+                </p>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="likeCount">Likes</Label>
+                <Input
+                  name="likeCount"
+                  id="likeCount"
+                  type="number"
+                  placeholder="50"
+                  defaultValue={editingFilm?.likeCount || ""}
+                />
+                <p className="text-destructive text-xs" role="alert">
+                  {state?.errors && "likeCount" in state.errors
+                    ? state.errors.likeCount
+                    : ""}
+                </p>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="dislikeCount">Dislikes</Label>
+                <Input
+                  name="dislikeCount"
+                  id="dislikeCount"
+                  type="number"
+                  placeholder="5"
+                  defaultValue={editingFilm?.dislikeCount || ""}
+                />
+                <p className="text-destructive text-xs" role="alert">
+                  {state?.errors && "dislikeCount" in state.errors
+                    ? state.errors.dislikeCount
+                    : ""}
+                </p>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -335,8 +290,8 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
               Cancel
             </Button>
           )}
-          <Button type="submit" className="w-full" disabled={pending}>
-            {pending
+          <Button type="submit" className="w-full" disabled={isPending}>
+            {isPending
               ? editingFilm
                 ? "Updating..."
                 : "Adding..."

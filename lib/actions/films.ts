@@ -8,7 +8,7 @@ import { eq } from "drizzle-orm"
 
 import { auth } from "../auth"
 
-export default async function addFilm(
+export async function addFilm(
   prevState: any /* eslint-disable-line */,
   formData: FormData
 ) {
@@ -16,16 +16,25 @@ export default async function addFilm(
     headers: await headers(),
   })
 
-  if (session?.user.id != process.env.NATHAN_ID)
-    throw new Error("Only Nathan can add bookmarks")
+  if (!session?.user.id)
+    throw new Error("Only authenticated users can add a film")
 
   try {
     const validatedData = filmSchema.safeParse({
       url: formData.get("url"),
       title: formData.get("title"),
+      description: formData.get("description") || "",
+      thumbnail: formData.get("thumbnail"),
+      publishedAt: formData.get("publishedAt"),
+      author: formData.get("author") || "",
+      views: formData.get("views") ? Number(formData.get("views")) : undefined,
+      likeCount: formData.get("likeCount")
+        ? Number(formData.get("likeCount"))
+        : undefined,
+      dislikeCount: formData.get("dislikeCount")
+        ? Number(formData.get("dislikeCount"))
+        : undefined,
       categories: formData.getAll("categories") as string[],
-      favicon: formData.get("favicon"),
-      author: formData.get("author"),
     })
 
     if (!validatedData.success) {
@@ -37,15 +46,23 @@ export default async function addFilm(
     await db.insert(films).values({
       title: validatedData.data.title.trim(),
       url: validatedData.data.url,
+      description: validatedData.data.description,
+      thumbnail: validatedData.data.thumbnail,
+      publishedAt: validatedData.data.publishedAt
+        ? new Date(validatedData.data.publishedAt)
+        : null,
+      author: validatedData.data.author,
+      views: validatedData.data.views,
+      likeCount: validatedData.data.likeCount,
+      dislikeCount: validatedData.data.dislikeCount,
       categories: validatedData.data.categories,
-      favicon: validatedData.data.favicon?.trim(),
-      author: validatedData.data.author?.trim(),
+      createdBy: session.user.id,
     })
 
-    revalidateTag("bookmarks")
+    revalidateTag("films")
   } catch (e) {
-    console.error("Error adding bookmark:", e)
-    return { errors: { general: ["Failed to add bookmark"] } }
+    console.error("Error adding film:", e)
+    return { errors: { general: ["Failed to add film"] } }
   }
 }
 
@@ -69,9 +86,18 @@ export async function updateFilm(
     const validatedData = filmSchema.safeParse({
       url: formData.get("url"),
       title: formData.get("title"),
+      description: formData.get("description") || "",
+      thumbnail: formData.get("thumbnail"),
+      publishedAt: formData.get("publishedAt"),
+      author: formData.get("author") || "",
+      views: formData.get("views") ? Number(formData.get("views")) : undefined,
+      likeCount: formData.get("likeCount")
+        ? Number(formData.get("likeCount"))
+        : undefined,
+      dislikeCount: formData.get("dislikeCount")
+        ? Number(formData.get("dislikeCount"))
+        : undefined,
       categories: formData.getAll("categories") as string[],
-      favicon: formData.get("favicon"),
-      author: formData.get("author"),
     })
 
     if (!validatedData.success) {
@@ -85,9 +111,16 @@ export async function updateFilm(
       .set({
         title: validatedData.data.title.trim(),
         url: validatedData.data.url,
+        description: validatedData.data.description,
+        thumbnail: validatedData.data.thumbnail,
+        publishedAt: validatedData.data.publishedAt
+          ? new Date(validatedData.data.publishedAt)
+          : null,
+        author: validatedData.data.author,
+        views: validatedData.data.views,
+        likeCount: validatedData.data.likeCount,
+        dislikeCount: validatedData.data.dislikeCount,
         categories: validatedData.data.categories,
-        favicon: validatedData.data.favicon?.trim(),
-        author: validatedData.data.author?.trim(),
         updatedAt: new Date(),
       })
       .where(eq(films.id, parseInt(id as string)))

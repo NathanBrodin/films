@@ -83,22 +83,21 @@ export default async function Home({ searchParams }: HomeProps) {
       </Hero>
       <Search />
       <section className="px-4 sm:px-6 sm:py-4">
-        <div className="grid w-full grid-cols-5 gap-6 xl:gap-16">
-          <div className="col-span-5 max-w-5xl lg:col-span-1">
-            <nav className="sticky top-24">
-              <CategoriesSidebar />
-            </nav>
-          </div>
-          <div className="col-span-5 space-y-2 lg:col-span-4">
-            {filteredFilms.map((bookmark) => (
-              <Film key={bookmark.id} {...bookmark} />
-            ))}
-            {filteredFilms.length === 0 && (
-              <span className="text-muted-foreground text-sm">
-                No result found for &quot;{searchQuery}&quot;
-              </span>
-            )}
-          </div>
+        <div className="grid w-full grid-cols-3 gap-4">
+          {filteredFilms.map((bookmark) => (
+            <Film key={bookmark.id} {...bookmark} />
+          ))}
+          {filteredFilms.map((bookmark) => (
+            <Film key={bookmark.id} {...bookmark} />
+          ))}
+          {filteredFilms.map((bookmark) => (
+            <Film key={bookmark.id} {...bookmark} />
+          ))}
+          {filteredFilms.length === 0 && (
+            <span className="text-muted-foreground text-sm">
+              No result found for &quot;{searchQuery}&quot;
+            </span>
+          )}
         </div>
       </section>
     </>
