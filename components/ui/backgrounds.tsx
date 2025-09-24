@@ -67,6 +67,37 @@ function Tiles({ className }: { className?: string }) {
   )
 }
 
+function Lines({ className }: { className?: string }) {
+  return (
+    <svg
+      className={cn(
+        "fill-primary/30 text-primary/30 stroke-primary/30 pointer-events-none absolute inset-0 [z-index:-1] size-full [mask-image:linear-gradient(to_left,_#ffffffad,_transparent)] opacity-60 select-none",
+        className
+      )}
+    >
+      <defs>
+        <pattern
+          id=":S3:"
+          width="4"
+          height="4"
+          patternUnits="userSpaceOnUse"
+          patternTransform="rotate(45)"
+        >
+          <line
+            x1="0"
+            y1="0"
+            x2="0"
+            y2="4"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          ></line>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#:S3:)"></rect>
+    </svg>
+  )
+}
+
 function Atari() {
   return (
     <svg
@@ -289,4 +320,4 @@ function Atari() {
   )
 }
 
-export { Noise, noiseVariants, Tiles, Atari }
+export { Noise, noiseVariants, Tiles, Lines, Atari }

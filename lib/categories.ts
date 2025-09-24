@@ -14,49 +14,16 @@ export type Category = {
 }
 
 export const categories: Category[] = [
-  {
-    label: "Inspirations",
-    value: "Inspirations",
-    variant: "purple",
-  },
-  {
-    label: "Registries",
-    value: "registries",
-    variant: "blue",
-  },
-  {
-    label: "Portfolios",
-    value: "portfolios",
-    variant: "cyan",
-  },
-  {
-    label: "Tools",
-    value: "Tools",
-    variant: "orange",
-  },
-  {
-    label: "Articles",
-    value: "Articles",
-    variant: "green",
-  },
-  {
-    label: "Services",
-    value: "Services",
-    variant: "teal",
-  },
-  {
-    label: "Templates",
-    value: "templates",
-    variant: "fuchsia",
-  },
-  {
-    label: "My Stuff",
-    value: "my-stuff",
-    variant: "yellow",
-  },
-  {
-    label: "Others",
-    value: "Others",
-    variant: "gray",
-  },
+  { label: "Park", value: "park", variant: "purple" },
+  { label: "Street", value: "street", variant: "blue" },
+  { label: "Freeride", value: "freeride", variant: "cyan" },
+
+  { label: "Ski", value: "ski", variant: "orange" },
+  { label: "Snowboard", value: "snowboard", variant: "green" },
+
+  { label: "Film", value: "film", variant: "teal" },
+  { label: "Edit", value: "edit", variant: "fuchsia" },
+  { label: "Series", value: "series", variant: "yellow" },
+
+  { label: "Other", value: "other", variant: "gray" },
 ]

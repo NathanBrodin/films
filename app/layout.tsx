@@ -10,6 +10,7 @@ import { Toaster } from "@/components/ui/sonner"
 import { ActiveThemeProvider } from "@/components/providers/active-theme-provider"
 import { LayoutProvider } from "@/components/providers/layout-provider"
 import { ThemeProvider } from "@/components/providers/theme-provider"
+import { TailwindIndicator } from "@/components/tailwing-indicator"
 
 const lora = Lora({
   variable: "--font-display",
@@ -100,6 +101,7 @@ export default function RootLayout({
             <ActiveThemeProvider>
               {children}
               <Toaster position="top-center" />
+              <TailwindIndicator />
             </ActiveThemeProvider>
           </LayoutProvider>
         </ThemeProvider>

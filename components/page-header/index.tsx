@@ -24,11 +24,13 @@ export function PageHeader() {
         <Separator orientation="vertical" />
         <ThemeSelector variant="small" />
         <Account />
-        <Button className="px-2 py-1">
-          Log a Film
-          <Kbd className="text-primary-foreground-fixed border-primary-foreground-fixed/20 bg-primary-foreground-fixed/10 font-bold">
-            L
-          </Kbd>
+        <Button className="px-2 py-1" asChild>
+          <Link href="/films/new">
+            Log a Film
+            <Kbd className="text-primary-foreground-fixed border-primary-foreground-fixed/20 bg-primary-foreground-fixed/10 font-bold">
+              L
+            </Kbd>
+          </Link>
         </Button>
       </Toolbar>
     </Header>

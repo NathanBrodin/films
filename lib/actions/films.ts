@@ -149,10 +149,38 @@ export async function deleteFilm(id: number) {
   }
 }
 
-export const getFilms = unstable_cache(
-  async () => {
-    return await db.select().from(films)
-  },
-  ["films"],
-  { tags: ["films"], revalidate: false }
-)
+export const getFilms = async () => {
+  return await db.select().from(films)
+}
+
+export const getFilmById = async (id: string) => {
+  const film = await db
+    .select()
+    .from(films)
+    .where(eq(films.id, parseInt(id)))
+    .limit(1)
+
+  return film[0] || null
+}
+
+// export const getFilms = unstable_cache(
+//   async () => {
+//     return await db.select().from(films)
+//   },
+//   ["films"],
+//   { tags: ["films"], revalidate: false }
+// )
+
+// export const getFilmById = unstable_cache(
+//   async (id: string) => {
+//     const film = await db
+//       .select()
+//       .from(films)
+//       .where(eq(films.id, parseInt(id)))
+//       .limit(1)
+
+//     return film[0] || null
+//   },
+//   ["film-by-id"],
+//   { tags: ["films"], revalidate: false }
+// )

@@ -1,8 +1,6 @@
 import { getFilms } from "@/lib/actions/films"
 import { Hero, HeroDescription, HeroHeading } from "@/components/ui/hero"
-import { CategoriesSidebar } from "@/components/categories-sidebar"
 import { Film } from "@/components/film"
-import { Search } from "@/components/search"
 
 type HomeProps = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
@@ -81,7 +79,6 @@ export default async function Home({ searchParams }: HomeProps) {
           My collection of ski and snowboard films, edits, and clips
         </HeroDescription>
       </Hero>
-      <Search />
       <section className="px-4 sm:px-6 sm:py-4">
         <div className="grid w-full grid-cols-3 gap-4">
           {filteredFilms.map((bookmark) => (

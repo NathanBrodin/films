@@ -5,8 +5,17 @@ import Link from "next/link"
 import { Film as FilmData } from "@/db/schema"
 import { format } from "date-fns"
 
+import { categories } from "@/lib/categories"
+
+import { Badge } from "./ui/badge"
+
 export function Film(film: FilmData) {
   const patternId = `pattern-${film.id}`
+
+  const getCategoryVariant = (categoryId: string) => {
+    const category = categories.find((cat) => cat.value === categoryId)
+    return category?.variant || "gray"
+  }
 
   return (
     <div className="group hover:shadow-alt hover:border-primary/20 border-border relative flex w-full flex-col overflow-clip rounded-sm border [box-shadow:hsl(218,_13%,_50%,_0.1)_0_-2px_0_0_inset] transition-colors active:translate-y-px active:scale-[.99]">
@@ -33,24 +42,38 @@ export function Film(film: FilmData) {
           <rect width="100%" height="100%" fill={`url(#${patternId})`}></rect>
         </svg>
         <div className="relative flex size-full items-center justify-center">
+          <div className="absolute top-2 right-2 z-10 flex flex-wrap gap-2">
+            {film.categories.map((category) => (
+              <Badge
+                key={category}
+                variant={getCategoryVariant(category)}
+                className="bg-card h-[18px] text-[0.625rem] leading-6"
+              >
+                {category}
+              </Badge>
+            ))}
+          </div>
           <Image
             src={film.thumbnail ?? "placeholder.svg"}
             alt={film.title}
             fill={true}
-            className="size-full rounded-[2px] border object-cover object-center shadow-lg"
+            className="aspect-video size-full rounded-[2px] border object-cover object-center shadow-lg"
           />
-          <div className="bg-cream-50 dark:bg-offgray-950 text-accent-blue absolute right-0 bottom-0 left-0 z-2 flex transform items-center divide-x divide-blue-300 border-t border-blue-300 text-xs [box-shadow:hsl(218,_13%,_50%,_0.1)_0_-2px_0_0_inset] transition-transform duration-200 group-focus-within:translate-y-0 group-hover:translate-y-0 md:translate-y-full dark:divide-blue-400/50 dark:border-blue-400/50 dark:text-blue-100 dark:[box-shadow:hsl(218,_13%,_70%,_0.05)_0_-2px_0_0_inset]">
-            <button className="dark:bg-offgray-950 fv-style w-full px-3 py-2 text-center hover:bg-blue-50 focus-visible:![outline-offset:-4px] dark:hover:bg-blue-950">
-              See more
-            </button>
-            <Link
-              href={film.url}
-              target="_blank"
-              className="dark:bg-offgray-950 fv-style flex w-full cursor-pointer items-center justify-center gap-1.5 px-3 py-2 hover:bg-blue-50 focus-visible:![outline-offset:-4px] dark:hover:bg-blue-950"
-            >
-              See video
-            </Link>
-          </div>
+        </div>
+        <div className="bg-card text-primary divide-primary border-primary absolute right-0 bottom-0 left-0 z-2 flex transform items-center divide-x border-t text-xs [box-shadow:hsl(218,_13%,_50%,_0.1)_0_-2px_0_0_inset] transition-transform duration-200 group-focus-within:translate-y-0 group-hover:translate-y-0 md:translate-y-full">
+          <Link
+            href={`/films/${film.id}`}
+            className="bg-card w-full px-3 py-2 text-center hover:bg-blue-50 focus-visible:[outline-offset:-4px]"
+          >
+            See more
+          </Link>
+          <Link
+            href={film.url}
+            target="_blank"
+            className="bg-card w-full px-3 py-2 text-center hover:bg-blue-50 focus-visible:[outline-offset:-4px]"
+          >
+            See video
+          </Link>
         </div>
       </div>
       <div className="bg-card flex h-fit flex-1 shrink-0 flex-col gap-1 border-t border-gray-100 p-3.5 dark:border-gray-400/15">
@@ -61,12 +84,10 @@ export function Film(film: FilmData) {
           {film.description}
         </p>
         <div className="mt-auto flex items-center justify-between gap-2 pt-2">
-          <p className="font-mono text-sm text-[0.625rem] leading-5">
-            {film.author}
-          </p>
+          <p className="font-mono text-xs">{film.author}</p>
           <div className="flex h-5 items-baseline gap-2">
             {film.publishedAt && (
-              <p className="text-muted-foreground font-mono text-sm text-[0.625rem] leading-5">
+              <p className="text-muted-foreground font-mono text-xs">
                 {format(new Date(film.publishedAt), "MMMM do, yyyy")}
               </p>
             )}
