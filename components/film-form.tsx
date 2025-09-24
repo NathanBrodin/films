@@ -327,6 +327,10 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
         </form>
       </Card>
       <div className="w-full border-l">
+        <div className="text-primary relative flex w-full items-center justify-center p-2">
+          <h4>Preview</h4>
+          <Lines className="[mask-image:none] text-orange-300 opacity-60" />
+        </div>
         <section className="border-grid">
           <div className="container-wrapper from-primary/2 relative bg-linear-to-t">
             <div className="flex">

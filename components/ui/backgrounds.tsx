@@ -1,3 +1,4 @@
+import { useId } from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
@@ -34,6 +35,8 @@ function Noise({
 }
 
 function Tiles({ className }: { className?: string }) {
+  const id = useId()
+
   return (
     <svg
       aria-hidden="true"
@@ -47,7 +50,7 @@ function Tiles({ className }: { className?: string }) {
     >
       <defs>
         <pattern
-          id=":R1oafknq6ja:"
+          id={id}
           width="20"
           height="20"
           patternUnits="userSpaceOnUse"
@@ -61,13 +64,15 @@ function Tiles({ className }: { className?: string }) {
         width="100%"
         height="100%"
         strokeWidth="0"
-        fill="url(#:R1oafknq6ja:)"
+        fill={`url(#${id})`}
       ></rect>
     </svg>
   )
 }
 
 function Lines({ className }: { className?: string }) {
+  const id = useId()
+
   return (
     <svg
       className={cn(
@@ -77,7 +82,7 @@ function Lines({ className }: { className?: string }) {
     >
       <defs>
         <pattern
-          id=":S3:"
+          id={id}
           width="4"
           height="4"
           patternUnits="userSpaceOnUse"
@@ -93,7 +98,7 @@ function Lines({ className }: { className?: string }) {
           ></line>
         </pattern>
       </defs>
-      <rect width="100%" height="100%" fill="url(#:S3:)"></rect>
+      <rect width="100%" height="100%" fill={`url(#${id})`}></rect>
     </svg>
   )
 }
