@@ -6,6 +6,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Film } from "@/db/schema"
 import { format } from "date-fns"
+import { TriangleAlert } from "lucide-react"
 
 import { addFilm } from "@/lib/actions/films"
 import { categories } from "@/lib/categories"
@@ -70,13 +71,11 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
 
   return (
     <>
-      <Card className="m-6 h-fit">
+      <Card className="relative z-10 m-6 h-fit">
         <CardHeader>
           <CardTitle>Add a new film</CardTitle>
           <CardDescription>
-            If you had a film in my that was not registered in the film
-            database, here&apos; your opportunity to add it and share it with
-            everyone.
+            Add a film that isn’t in the database yet.
           </CardDescription>
           {editingFilm && (
             <CardAction>
@@ -91,7 +90,7 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
             <input type="hidden" name="id" value={editingFilm.id} />
           )}
           <CardContent className="flex flex-row gap-4">
-            <div className="flex max-w-sm flex-col gap-4">
+            <div className="flex max-w-lg flex-col gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="url">URL</Label>
                 <Input
@@ -327,9 +326,14 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
         </form>
       </Card>
       <div className="w-full border-l">
-        <div className="text-primary relative flex w-full items-center justify-center p-2">
-          <h4>Preview</h4>
-          <Lines className="[mask-image:none] text-orange-300 opacity-60" />
+        <div className="text-primary relative flex w-full items-center justify-center border border-amber-300 bg-linear-to-r from-transparent via-amber-300/30 to-transparent p-2">
+          <div className="flex items-center gap-2">
+            <TriangleAlert className="size-4 text-amber-500" />
+            <span className="font-display text-foreground text-sm font-medium tracking-wide text-balance">
+              This is a preview of the created film
+            </span>
+          </div>
+          <Lines className="[mask-image:none] text-amber-300 opacity-20" />
         </div>
         <section className="border-grid">
           <div className="container-wrapper from-primary/2 relative bg-linear-to-t">
@@ -358,7 +362,7 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
                   </p>
                 </div>
               </div>
-              <div className="relative hidden w-xs sm:block md:w-sm lg:w-xl">
+              <div className="relative hidden w-xs sm:block md:w-sm xl:w-xl">
                 <Link href={formData.url || "#"} target="_blank">
                   <Image
                     src={formData.thumbnail || "/placeholder.svg"}
