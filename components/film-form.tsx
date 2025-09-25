@@ -53,6 +53,7 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
       : "",
     author: editingFilm?.author || "",
     views: editingFilm?.views || 0,
+    likeCount: editingFilm?.likeCount || 0,
     categories: editingFilm?.categories || [],
   })
 
@@ -288,6 +289,27 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
                       : ""}
                   </p>
                 </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="likeCount">Likes</Label>
+                  <Input
+                    name="likeCount"
+                    id="likeCount"
+                    type="number"
+                    placeholder="1000"
+                    defaultValue={editingFilm?.likeCount || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "likeCount",
+                        parseInt(e.target.value) || 0
+                      )
+                    }
+                  />
+                  <p className="text-destructive text-xs" role="alert">
+                    {state?.errors && "likeCount" in state.errors
+                      ? state.errors.likeCount
+                      : ""}
+                  </p>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -397,7 +419,7 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
             </div>
             <div className="flex flex-col gap-1">
               <p className="text-muted-foreground font-mono text-xs">Likes</p>
-              <Likes likeCount={0} />
+              <Likes likeCount={formData.likeCount} />
             </div>
             <div className="flex flex-col gap-1">
               <p className="text-muted-foreground font-mono text-xs">Views</p>
