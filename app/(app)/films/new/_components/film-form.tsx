@@ -1,24 +1,12 @@
 "use client"
 
 import { useActionState, useState } from "react"
-import Image from "next/image"
-import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Film } from "@/db/schema"
-import { format } from "date-fns"
-import { TriangleAlert } from "lucide-react"
+import { Film, FilmCreate } from "@/db/schema"
 
 import { addFilm } from "@/lib/actions/films"
 import { categories } from "@/lib/categories"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-
-import { Categories } from "./film/categories"
-import { Likes } from "./film/likes"
-import { Rating } from "./film/rating"
-import { Views } from "./film/views"
-import { Lines } from "./ui/backgrounds"
 import {
   Card,
   CardAction,
@@ -27,11 +15,14 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "./ui/card"
-import { Diamond } from "./ui/diamond"
-import MultipleSelector, { Option } from "./ui/multiselect"
-import { SectionDivider, Separator } from "./ui/separator"
-import { Textarea } from "./ui/textarea"
+} from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import MultipleSelector from "@/components/ui/multiselect"
+import { Separator } from "@/components/ui/separator"
+import { Textarea } from "@/components/ui/textarea"
+
+import { FilmPreview } from "./film-preview"
 
 interface FilmFormProps {
   editingFilm?: Film | null
@@ -43,7 +34,7 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
   const [state, action, isPending] = useActionState(addFilm, null)
 
   // Form state for live preview
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FilmCreate>({
     url: editingFilm?.url || "",
     title: editingFilm?.title || "",
     description: editingFilm?.description || "",
@@ -52,23 +43,123 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
       ? new Date(editingFilm.publishedAt).toISOString().split("T")[0]
       : "",
     author: editingFilm?.author || "",
-    views: editingFilm?.views || 0,
+    viewCount: editingFilm?.viewCount || 0,
     likeCount: editingFilm?.likeCount || 0,
     categories: editingFilm?.categories || [],
   })
+
+  const [isLoadingVideoInfo, setIsLoadingVideoInfo] = useState(false)
+  const [videoInfoError, setVideoInfoError] = useState<string | null>(null)
+  const [autoFilledFields, setAutoFilledFields] = useState<Set<string>>(
+    new Set()
+  )
 
   const handleInputChange = (
     field: string,
     value: string | number | string[]
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
+    // Remove auto-filled status when user manually edits a field
+    if (autoFilledFields.has(field)) {
+      setAutoFilledFields((prev) => {
+        const newSet = new Set(prev)
+        newSet.delete(field)
+        return newSet
+      })
+    }
+  }
+
+  const handleUrlChange = async (url: string) => {
+    handleInputChange("url", url)
+
+    // Check if the URL looks like a YouTube URL
+    if (url && (url.includes("youtube.com") || url.includes("youtu.be"))) {
+      setIsLoadingVideoInfo(true)
+      setVideoInfoError(null)
+      try {
+        const response = await fetch("/api/youtube", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ url }),
+        })
+
+        if (response.ok) {
+          const { filmData } = await response.json()
+
+          // Auto-fill the form with the video data
+          setFormData((prev) => ({
+            ...prev,
+            url: url,
+            title: filmData.title,
+            description: filmData.description || "",
+            thumbnail: filmData.thumbnail || "",
+            publishedAt: new Date(filmData.publishedAt)
+              .toISOString()
+              .split("T")[0],
+            author: filmData.author || "",
+            viewCount: filmData.viewCount || 0,
+            likeCount: filmData.likeCount || 0,
+          }))
+
+          // Mark fields as auto-filled
+          setAutoFilledFields(
+            new Set([
+              "title",
+              "description",
+              "thumbnail",
+              "publishedAt",
+              "author",
+              "viewCount",
+              "likeCount",
+            ])
+          )
+        } else {
+          const errorText = await response.text()
+          console.error("Failed to fetch YouTube video info:", errorText)
+          setVideoInfoError(
+            "Failed to fetch video information. Please check the URL or try again."
+          )
+        }
+      } catch (error) {
+        console.error("Failed to fetch YouTube video info:", error)
+        setVideoInfoError(
+          "Network error. Please check your connection and try again."
+        )
+      } finally {
+        setIsLoadingVideoInfo(false)
+      }
+    } else if (
+      url &&
+      !url.includes("youtube.com") &&
+      !url.includes("youtu.be")
+    ) {
+      // Clear any previous auto-fill data if it's not a YouTube URL
+      setVideoInfoError(null)
+      setAutoFilledFields(new Set())
+    }
   }
 
   function onDelete() {}
 
-  function resetForm() {}
+  function resetForm() {
+    setFormData({
+      url: "",
+      title: "",
+      description: "",
+      thumbnail: "",
+      publishedAt: "",
+      author: "",
+      viewCount: 0,
+      likeCount: 0,
+      categories: [],
+    })
+    setAutoFilledFields(new Set())
+    setVideoInfoError(null)
+  }
 
-  const metadata = {}
+  const hasAutoFilledData = autoFilledFields.size > 0
 
   return (
     <>
@@ -90,17 +181,59 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
           {editingFilm && (
             <input type="hidden" name="id" value={editingFilm.id} />
           )}
+          {/* Hidden inputs to pass current form state to server */}
+          <input type="hidden" name="url" value={formData.url} />
+          <input type="hidden" name="title" value={formData.title} />
+          <input
+            type="hidden"
+            name="description"
+            value={formData.description}
+          />
+          <input type="hidden" name="thumbnail" value={formData.thumbnail} />
+          <input
+            type="hidden"
+            name="publishedAt"
+            value={formData.publishedAt}
+          />
+          <input type="hidden" name="author" value={formData.author} />
+          <input type="hidden" name="views" value={formData.viewCount} />
+          <input type="hidden" name="likeCount" value={formData.likeCount} />
+          {formData.categories.map((category, index) => (
+            <input
+              key={index}
+              type="hidden"
+              name="categories"
+              value={category}
+            />
+          ))}
           <CardContent className="flex flex-row gap-4">
             <div className="flex max-w-lg flex-col gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="url">URL</Label>
                 <Input
-                  name="url"
                   id="url"
                   placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-                  defaultValue={editingFilm?.url || ""}
-                  onChange={(e) => handleInputChange("url", e.target.value)}
+                  value={formData.url}
+                  onChange={(e) => handleUrlChange(e.target.value)}
+                  disabled={isLoadingVideoInfo}
                 />
+                {isLoadingVideoInfo && (
+                  <p className="text-muted-foreground animate-pulse text-sm">
+                    🔄 Fetching video information...
+                  </p>
+                )}
+                {hasAutoFilledData &&
+                  !isLoadingVideoInfo &&
+                  !videoInfoError && (
+                    <p className="text-sm text-green-600">
+                      ✅ Video information loaded successfully
+                    </p>
+                  )}
+                {videoInfoError && (
+                  <p className="text-destructive text-sm">
+                    ⚠️ {videoInfoError}
+                  </p>
+                )}
                 <p className="text-destructive text-xs" role="alert">
                   {state?.errors && "url" in state.errors
                     ? state.errors.url
@@ -149,17 +282,16 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
               <div className="grid gap-2">
                 <Label htmlFor="title">
                   Title
-                  {metadata && (
+                  {autoFilledFields.has("title") && (
                     <span className="text-muted-foreground ml-2 text-xs">
                       (auto-filled)
                     </span>
                   )}
                 </Label>
                 <Input
-                  name="title"
                   id="title"
                   placeholder="Page title"
-                  defaultValue={editingFilm?.title || ""}
+                  value={formData.title}
                   onChange={(e) => handleInputChange("title", e.target.value)}
                 />
                 <p className="text-destructive text-xs" role="alert">
@@ -171,7 +303,7 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
               <div className="grid gap-2">
                 <Label htmlFor="description">
                   Description
-                  {metadata && (
+                  {autoFilledFields.has("description") && (
                     <span className="text-muted-foreground ml-2 text-xs">
                       (auto-filled)
                     </span>
@@ -179,10 +311,9 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
                 </Label>
                 <div className="flex items-center gap-2">
                   <Textarea
-                    name="description"
                     id="description"
                     placeholder="Film description"
-                    defaultValue={editingFilm?.description || ""}
+                    value={formData.description}
                     onChange={(e) =>
                       handleInputChange("description", e.target.value)
                     }
@@ -197,17 +328,16 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
               <div className="grid gap-2">
                 <Label htmlFor="thumbnail">
                   Thumbnail
-                  {metadata && (
+                  {autoFilledFields.has("thumbnail") && (
                     <span className="text-muted-foreground ml-2 text-xs">
                       (auto-filled)
                     </span>
                   )}
                 </Label>
                 <Input
-                  name="thumbnail"
                   id="thumbnail"
                   placeholder="https://example.com/thumbnail.jpg"
-                  defaultValue={editingFilm?.thumbnail || ""}
+                  value={formData.thumbnail}
                   onChange={(e) =>
                     handleInputChange("thumbnail", e.target.value)
                   }
@@ -221,23 +351,16 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
               <div className="grid gap-2">
                 <Label htmlFor="publishedAt">
                   Published Date
-                  {metadata && (
+                  {autoFilledFields.has("publishedAt") && (
                     <span className="text-muted-foreground ml-2 text-xs">
                       (auto-filled)
                     </span>
                   )}
                 </Label>
                 <Input
-                  name="publishedAt"
                   id="publishedAt"
                   type="date"
-                  defaultValue={
-                    editingFilm?.publishedAt
-                      ? new Date(editingFilm.publishedAt)
-                          .toISOString()
-                          .split("T")[0]
-                      : ""
-                  }
+                  value={formData.publishedAt}
                   onChange={(e) =>
                     handleInputChange("publishedAt", e.target.value)
                   }
@@ -251,17 +374,16 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
               <div className="grid gap-2">
                 <Label htmlFor="author">
                   Author
-                  {metadata && (
+                  {autoFilledFields.has("author") && (
                     <span className="text-muted-foreground ml-2 text-xs">
                       (auto-filled)
                     </span>
                   )}
                 </Label>
                 <Input
-                  name="author"
                   id="author"
                   placeholder="Author name"
-                  defaultValue={editingFilm?.author || ""}
+                  value={formData.author}
                   onChange={(e) => handleInputChange("author", e.target.value)}
                 />
                 <p className="text-destructive text-xs" role="alert">
@@ -272,31 +394,46 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <div className="grid gap-2">
-                  <Label htmlFor="views">Views</Label>
+                  <Label htmlFor="views">
+                    Views
+                    {autoFilledFields.has("viewCount") && (
+                      <span className="text-muted-foreground ml-2 text-xs">
+                        (auto-filled)
+                      </span>
+                    )}
+                  </Label>
                   <Input
-                    name="views"
                     id="views"
                     type="number"
                     placeholder="1000"
-                    defaultValue={editingFilm?.views || ""}
+                    value={formData.viewCount || ""}
                     onChange={(e) =>
-                      handleInputChange("views", parseInt(e.target.value) || 0)
+                      handleInputChange(
+                        "viewCount",
+                        parseInt(e.target.value) || 0
+                      )
                     }
                   />
                   <p className="text-destructive text-xs" role="alert">
-                    {state?.errors && "views" in state.errors
-                      ? state.errors.views
+                    {state?.errors && "viewCount" in state.errors
+                      ? state.errors.viewCount
                       : ""}
                   </p>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="likeCount">Likes</Label>
+                  <Label htmlFor="likeCount">
+                    Likes
+                    {autoFilledFields.has("likeCount") && (
+                      <span className="text-muted-foreground ml-2 text-xs">
+                        (auto-filled)
+                      </span>
+                    )}
+                  </Label>
                   <Input
-                    name="likeCount"
                     id="likeCount"
                     type="number"
                     placeholder="1000"
-                    defaultValue={editingFilm?.likeCount || ""}
+                    value={formData.likeCount || ""}
                     onChange={(e) =>
                       handleInputChange(
                         "likeCount",
@@ -324,7 +461,7 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
                 className="w-full"
                 onClick={resetForm}
               >
-                Cancel
+                Reset Form
               </Button>
             ) : (
               <Button
@@ -347,95 +484,7 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
           </CardFooter>
         </form>
       </Card>
-      <div className="w-full border-l">
-        <div className="text-primary relative flex w-full items-center justify-center border border-amber-300 bg-linear-to-r from-transparent via-amber-300/30 to-transparent p-2">
-          <div className="flex items-center gap-2">
-            <TriangleAlert className="size-4 text-amber-500" />
-            <span className="font-display text-foreground text-sm font-medium tracking-wide text-balance">
-              This is a preview of the created film
-            </span>
-          </div>
-          <Lines className="[mask-image:none] text-amber-300 opacity-20" />
-        </div>
-        <section className="border-grid">
-          <div className="container-wrapper from-primary/2 relative bg-linear-to-t">
-            <div className="flex">
-              <div className="flex flex-1 flex-col gap-6 px-4 py-8 md:px-8 md:py-16">
-                <Link
-                  href="/"
-                  className="text-primary decoration-primary/20 text-sm underline"
-                >
-                  ← Back to films
-                </Link>
-                <h1 className="max-w-2xl">
-                  <Link href={formData.url || "#"} target="_blank">
-                    {formData.title || "Untitled Film"}
-                  </Link>
-                </h1>
-                <div className="flex flex-col gap-0">
-                  <p className="text-sm">
-                    {formData.author || "Unknown Author"}
-                  </p>
-
-                  <p className="text-muted-foreground text-xs">
-                    {formData.publishedAt
-                      ? format(new Date(formData.publishedAt), "MMMM do, yyyy")
-                      : "Date not set"}
-                  </p>
-                </div>
-              </div>
-              <div className="relative hidden w-xs sm:block md:w-sm xl:w-xl">
-                <Link href={formData.url || "#"} target="_blank">
-                  <Image
-                    src={formData.thumbnail || "/placeholder.svg"}
-                    alt={formData.title || "Film thumbnail"}
-                    fill={true}
-                    className="aspect-video size-full translate-x-2 translate-y-1/4 rounded-l-xl border-t border-b border-l object-cover object-center shadow-lg"
-                  />
-                </Link>
-              </div>
-            </div>
-            <Categories
-              categories={formData.categories}
-              className="absolute bottom-2 left-2 z-10"
-            />
-            <Lines />
-          </div>
-        </section>
-        <SectionDivider />
-        <section className="relative aspect-video w-full sm:hidden">
-          <Image
-            src={formData.thumbnail || "/placeholder.svg"}
-            alt={formData.title || "Film thumbnail"}
-            fill={true}
-            className="object-cover object-center"
-          />
-        </section>
-        <section>
-          <div className="border-grid relative inline-flex w-full items-center gap-10 border-b border-dashed px-4 py-2 sm:px-6 sm:py-4">
-            <div className="flex flex-col gap-1 opacity-30">
-              <p className="text-muted-foreground font-mono text-xs">Ratings</p>
-              <Rating />
-            </div>
-            <div className="flex flex-col gap-1">
-              <p className="text-muted-foreground font-mono text-xs">Likes</p>
-              <Likes likeCount={formData.likeCount} />
-            </div>
-            <div className="flex flex-col gap-1">
-              <p className="text-muted-foreground font-mono text-xs">Views</p>
-              <Views views={formData.views} />
-            </div>
-            <Lines className="[mask-image:none] opacity-15 dark:opacity-50" />
-            <Diamond bottom left />
-            <Diamond bottom right />
-          </div>
-          <div className="px-4 sm:px-6 sm:py-4">
-            <p className="text-muted-foreground leading-relaxed">
-              {formData.description || "No description provided."}
-            </p>
-          </div>
-        </section>
-      </div>
+      <FilmPreview film={formData} />
     </>
   )
 }

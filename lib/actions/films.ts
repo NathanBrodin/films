@@ -1,6 +1,6 @@
 "use server"
 
-import { revalidateTag, unstable_cache } from "next/cache"
+import { revalidateTag } from "next/cache"
 import { headers } from "next/headers"
 import { db } from "@/db"
 import { films, filmSchema } from "@/db/schema"
@@ -52,9 +52,8 @@ export async function addFilm(
         ? new Date(validatedData.data.publishedAt)
         : null,
       author: validatedData.data.author,
-      views: validatedData.data.views,
+      viewCount: validatedData.data.viewCount,
       likeCount: validatedData.data.likeCount,
-      dislikeCount: validatedData.data.dislikeCount,
       categories: validatedData.data.categories,
       createdBy: session.user.id,
     })
@@ -117,9 +116,8 @@ export async function updateFilm(
           ? new Date(validatedData.data.publishedAt)
           : null,
         author: validatedData.data.author,
-        views: validatedData.data.views,
+        viewCount: validatedData.data.viewCount,
         likeCount: validatedData.data.likeCount,
-        dislikeCount: validatedData.data.dislikeCount,
         categories: validatedData.data.categories,
         updatedAt: new Date(),
       })

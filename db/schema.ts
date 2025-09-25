@@ -86,9 +86,8 @@ export const films = sqliteTable("films", {
   thumbnail: text("thumbnail"),
   publishedAt: integer("published_at", { mode: "timestamp" }),
   author: text("author"),
-  views: integer("views"),
+  viewCount: integer("views"),
   likeCount: integer("like_count"),
-  dislikeCount: integer("dislike_count"),
   categories: text("categories", { mode: "json" })
     .$type<string[]>()
     .default([])
@@ -139,11 +138,12 @@ export const filmSchema = z.object({
   thumbnail: z.string().optional(),
   publishedAt: z.string().date(),
   author: z.string(),
-  views: z.number().optional(),
+  viewCount: z.number().optional(),
   likeCount: z.number().optional(),
-  dislikeCount: z.number().optional(),
   categories: z.array(z.string()),
 })
+
+export type FilmCreate = z.infer<typeof filmSchema>
 
 export const reviewSchema = z.object({
   watched: z.boolean(),

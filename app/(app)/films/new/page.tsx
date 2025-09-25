@@ -1,4 +1,4 @@
-import { FilmForm } from "@/components/film-form"
+import { FilmForm } from "./_components/film-form"
 
 export default function NewFilm() {
   return (
