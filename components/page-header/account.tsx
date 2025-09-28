@@ -9,9 +9,10 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu"
-import { Divider, Separator } from "@/components/ui/separator"
+import { Divider } from "@/components/ui/separator"
 
 import { SignOut } from "../sign-out"
+import { Button } from "../ui/button"
 
 export async function Account() {
   const session = await auth.api.getSession({
@@ -19,7 +20,11 @@ export async function Account() {
   })
 
   if (!session) {
-    return <Link href="/sign-in">Sign In</Link>
+    return (
+      <Button asChild variant="secondary">
+        <Link href="/sign-in">Sign In</Link>
+      </Button>
+    )
   }
 
   return (

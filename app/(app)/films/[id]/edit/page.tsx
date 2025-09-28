@@ -1,19 +1,34 @@
 import { headers } from "next/headers"
 import Link from "next/link"
+import { notFound } from "next/navigation"
 
+import { getFilmById } from "@/lib/actions/films"
 import { auth } from "@/lib/auth"
 import { Lines } from "@/components/ui/backgrounds"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 
-import { FilmForm } from "./_components/film-form"
+import { FilmForm } from "../../new/_components/film-form"
 
-export default async function NewFilm() {
+interface FilmPageProps {
+  params: Promise<{
+    id: string
+  }>
+}
+
+export default async function EditFilmPage({ params }: FilmPageProps) {
   const session = await auth.api.getSession({
     headers: await headers(),
   })
 
-  if (!session?.user.id) {
+  const { id } = await params
+  const film = await getFilmById(id)
+
+  if (!film) {
+    notFound()
+  }
+
+  if (!session?.user.id || session.user.id !== film.createdBy) {
     return (
       <div className="flex h-full items-center justify-center text-center">
         <Card>
@@ -36,7 +51,7 @@ export default async function NewFilm() {
 
   return (
     <div className="flex flex-col md:flex-row">
-      <FilmForm />
+      <FilmForm editingFilm={film} />
     </div>
   )
 }

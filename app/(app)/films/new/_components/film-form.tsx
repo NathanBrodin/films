@@ -6,12 +6,14 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
 import { useForm } from "react-hook-form"
+import { toast } from "sonner"
 import { z } from "zod"
 
 import { addFilm } from "@/lib/actions/films"
 import { getVideoInfo } from "@/lib/actions/youtube"
 import { categories, Category } from "@/lib/categories"
 import { cn, isValidYouTubeUrl } from "@/lib/utils"
+import { AnimatedState } from "@/components/ui/animate-state"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import {
@@ -53,17 +55,29 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
 
   const form = useForm<z.infer<typeof filmSchema>>({
     resolver: zodResolver(filmSchema),
-    defaultValues: {
-      url: "",
-      title: "",
-      description: "",
-      thumbnail: "",
-      publishedAt: new Date(),
-      author: "",
-      viewCount: undefined,
-      likeCount: undefined,
-      categories: [],
-    },
+    defaultValues: editingFilm
+      ? {
+          url: editingFilm.url,
+          title: editingFilm.title,
+          description: editingFilm.description ?? "",
+          thumbnail: editingFilm.thumbnail ?? undefined,
+          publishedAt: editingFilm.publishedAt ?? new Date(),
+          author: editingFilm.author ?? "",
+          viewCount: editingFilm.viewCount ?? undefined,
+          likeCount: editingFilm.likeCount ?? undefined,
+          categories: editingFilm.categories,
+        }
+      : {
+          url: "",
+          title: "",
+          description: "",
+          thumbnail: "",
+          publishedAt: new Date(),
+          author: "",
+          viewCount: undefined,
+          likeCount: undefined,
+          categories: [],
+        },
   })
 
   const watchedValues = form.watch()
@@ -88,7 +102,14 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
 
   function onSubmit(values: z.infer<typeof filmSchema>) {
     startTransition(async () => {
-      await addFilm(values)
+      try {
+        await addFilm(values)
+        toast.success("Film added successfully!")
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Failed to add film"
+        toast.error(errorMessage)
+      }
     })
   }
 
@@ -339,13 +360,15 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
                 Cancel
               </Button>
               <Button type="submit" className="w-full" disabled={isPending}>
-                {isPending
-                  ? editingFilm
-                    ? "Updating..."
-                    : "Adding..."
-                  : editingFilm
-                    ? "Update Film"
-                    : "Add Film"}
+                <AnimatedState>
+                  {isPending
+                    ? editingFilm
+                      ? "Updating..."
+                      : "Adding..."
+                    : editingFilm
+                      ? "Update Film"
+                      : "Add Film"}
+                </AnimatedState>
               </Button>
             </CardFooter>
           </form>

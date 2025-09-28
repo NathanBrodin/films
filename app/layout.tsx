@@ -100,7 +100,7 @@ export default function RootLayout({
           <LayoutProvider>
             <ActiveThemeProvider>
               {children}
-              <Toaster position="top-center" />
+              <Toaster />
               <TailwindIndicator />
             </ActiveThemeProvider>
           </LayoutProvider>
