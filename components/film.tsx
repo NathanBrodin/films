@@ -54,7 +54,7 @@ export function Film(film: FilmData) {
             ))}
           </div>
           <Image
-            src={film.thumbnail ?? "placeholder.svg"}
+            src={film.thumbnail ?? "/placeholder.svg"}
             alt={film.title}
             fill={true}
             className="aspect-video size-full rounded-[2px] border object-cover object-center shadow-lg"
