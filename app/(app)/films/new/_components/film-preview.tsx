@@ -14,7 +14,7 @@ import { Views } from "@/components/film/views"
 
 export function FilmPreview({ film }: { film: FilmCreate }) {
   return (
-    <div className="w-full max-w-xl border-l">
+    <div className="w-full border-l md:max-w-xl">
       <div className="text-primary relative flex w-full items-center justify-center border border-amber-300 bg-linear-to-r from-transparent via-amber-300/30 to-transparent p-2">
         <div className="flex items-center gap-2">
           <TriangleAlertIcon className="size-4 text-amber-500" />
@@ -28,12 +28,6 @@ export function FilmPreview({ film }: { film: FilmCreate }) {
         <div className="container-wrapper from-primary/2 relative bg-linear-to-t">
           <div className="flex">
             <div className="flex flex-1 flex-col gap-6 px-4 py-8 md:px-8 md:py-16">
-              <Link
-                href="/"
-                className="text-primary decoration-primary/20 text-sm underline"
-              >
-                ← Back to films
-              </Link>
               <h1 className="max-w-2xl">
                 <Link href={film.url || "#"} target="_blank">
                   {film.title || "Untitled Film"}

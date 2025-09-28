@@ -94,7 +94,7 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
 
   return (
     <>
-      <Card className="relative z-10 m-6 h-fit w-full">
+      <Card className="relative z-10 m-0 mx-3 my-6 h-fit w-full md:m-6">
         <CardHeader>
           <CardTitle>Add a new film</CardTitle>
           <CardDescription>
