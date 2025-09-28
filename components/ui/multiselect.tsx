@@ -419,7 +419,7 @@ const MultipleSelector = ({
         commandProps?.onKeyDown?.(e)
       }}
       className={cn(
-        "h-auto overflow-visible bg-transparent",
+        "h-auto overflow-visible border-none bg-transparent shadow-none",
         commandProps?.className
       )}
       shouldFilter={

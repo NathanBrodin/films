@@ -49,16 +49,6 @@ export function FilmPreview({ film }: { film: FilmCreate }) {
                 </p>
               </div>
             </div>
-            {/*<div className="relative hidden w-xs sm:block md:w-sm xl:w-xl">
-              <Link href={film.url || "#"} target="_blank">
-                <Image
-                  src={film.thumbnail || "/placeholder.svg"}
-                  alt={film.title || "Film thumbnail"}
-                  fill={true}
-                  className="aspect-video size-full translate-x-2 translate-y-1/4 rounded-l-xl border-t border-b border-l object-cover object-center shadow-lg"
-                />
-              </Link>
-            </div>*/}
           </div>
           <Categories
             categories={film.categories}
@@ -70,7 +60,11 @@ export function FilmPreview({ film }: { film: FilmCreate }) {
       <SectionDivider />
       <section className="relative aspect-video w-full">
         <Image
-          src={film.thumbnail ?? "placeholder.svg"}
+          src={
+            film.thumbnail && film.thumbnail.trim()
+              ? film.thumbnail
+              : "/placeholder.svg"
+          }
           alt={film.title}
           fill={true}
           className="object-cover object-center"
