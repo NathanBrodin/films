@@ -14,7 +14,7 @@ import { Views } from "@/components/film/views"
 
 export function FilmPreview({ film }: { film: FilmCreate }) {
   return (
-    <div className="w-full border-l">
+    <div className="w-full max-w-xl border-l">
       <div className="text-primary relative flex w-full items-center justify-center border border-amber-300 bg-linear-to-r from-transparent via-amber-300/30 to-transparent p-2">
         <div className="flex items-center gap-2">
           <TriangleAlertIcon className="size-4 text-amber-500" />
@@ -49,7 +49,7 @@ export function FilmPreview({ film }: { film: FilmCreate }) {
                 </p>
               </div>
             </div>
-            <div className="relative hidden w-xs sm:block md:w-sm xl:w-xl">
+            {/*<div className="relative hidden w-xs sm:block md:w-sm xl:w-xl">
               <Link href={film.url || "#"} target="_blank">
                 <Image
                   src={film.thumbnail || "/placeholder.svg"}
@@ -58,7 +58,7 @@ export function FilmPreview({ film }: { film: FilmCreate }) {
                   className="aspect-video size-full translate-x-2 translate-y-1/4 rounded-l-xl border-t border-b border-l object-cover object-center shadow-lg"
                 />
               </Link>
-            </div>
+            </div>*/}
           </div>
           <Categories
             categories={film.categories}
@@ -68,10 +68,10 @@ export function FilmPreview({ film }: { film: FilmCreate }) {
         </div>
       </section>
       <SectionDivider />
-      <section className="relative aspect-video w-full sm:hidden">
+      <section className="relative aspect-video w-full">
         <Image
-          src={film.thumbnail || "/placeholder.svg"}
-          alt={film.title || "Film thumbnail"}
+          src={film.thumbnail ?? "placeholder.svg"}
+          alt={film.title}
           fill={true}
           className="object-cover object-center"
         />

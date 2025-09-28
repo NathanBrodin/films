@@ -9,8 +9,9 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 
 import { addFilm } from "@/lib/actions/films"
+import { getVideoInfo } from "@/lib/actions/youtube"
 import { categories, Category } from "@/lib/categories"
-import { cn } from "@/lib/utils"
+import { cn, isValidYouTubeUrl } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import {
@@ -48,6 +49,7 @@ interface FilmFormProps {
 
 export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
   const [isPending, startTransition] = useTransition()
+  const [isFetchingPending, startFetchingTransition] = useTransition()
 
   const form = useForm<z.infer<typeof filmSchema>>({
     resolver: zodResolver(filmSchema),
@@ -66,6 +68,24 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
 
   const watchedValues = form.watch()
 
+  function handleUrlChange(url: string) {
+    if (isValidYouTubeUrl(url)) {
+      startFetchingTransition(async () => {
+        const info = await getVideoInfo(url)
+
+        if (!info) return
+
+        form.setValue("title", info.title)
+        form.setValue("description", info.description)
+        form.setValue("thumbnail", info.thumbnail)
+        form.setValue("publishedAt", new Date(info.publishedAt))
+        form.setValue("author", info.author)
+        form.setValue("viewCount", info.viewCount)
+        form.setValue("likeCount", info.likeCount)
+      })
+    }
+  }
+
   function onSubmit(values: z.infer<typeof filmSchema>) {
     startTransition(async () => {
       await addFilm(values)
@@ -74,7 +94,7 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
 
   return (
     <>
-      <Card className="relative z-10 m-6 h-fit w-full max-w-md">
+      <Card className="relative z-10 m-6 h-fit w-full">
         <CardHeader>
           <CardTitle>Add a new film</CardTitle>
           <CardDescription>
@@ -104,6 +124,10 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
                           autoComplete="off"
                           placeholder="https://www.youtube.com/..."
                           {...field}
+                          onChange={(e) => {
+                            form.setValue("url", e.target.value)
+                            handleUrlChange(e.target.value)
+                          }}
                         />
                       </FormControl>
                       <FormMessage />

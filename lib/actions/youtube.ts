@@ -1,3 +1,5 @@
+"use server"
+
 interface VideoSnippet {
   title: string
   description: string
@@ -37,7 +39,7 @@ interface YouTubeApiResponse {
   }
 }
 
-export async function getVideoInfo(url: string): Promise<VideoInfo | null> {
+export async function getVideoInfo(url: string) {
   const videoId = extractVideoId(url)
 
   if (!videoId) {
@@ -67,13 +69,12 @@ export async function getVideoInfo(url: string): Promise<VideoInfo | null> {
     }
 
     const data: YouTubeApiResponse = await response.json()
-    console.log(data)
 
     if (!data.items || data.items.length === 0) {
       return null
     }
 
-    return data.items[0]
+    return youtubeToFilm(data.items[0])
   } catch (error) {
     console.error("Error fetching video info:", error)
     throw error
@@ -101,12 +102,12 @@ function extractVideoId(url: string): string | null {
   return null
 }
 
-export function youtubeToFilm(videoInfo: VideoInfo) {
+function youtubeToFilm(videoInfo: VideoInfo) {
   return {
     url: "",
     title: videoInfo.snippet.title,
     description: videoInfo.snippet.description,
-    thumbnail: videoInfo.snippet.thumbnails.default.url,
+    thumbnail: videoInfo.snippet.thumbnails.high.url,
     publishedAt: videoInfo.snippet.publishedAt,
     author: videoInfo.snippet.channelTitle,
     viewCount: parseInt(videoInfo.statistics.viewCount),
