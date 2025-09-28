@@ -1,12 +1,18 @@
 "use client"
 
-import { useActionState, useState } from "react"
-import { usePathname, useRouter } from "next/navigation"
-import { Film, FilmCreate } from "@/db/schema"
+import { useTransition } from "react"
+import { Film, filmSchema } from "@/db/schema"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { format } from "date-fns"
+import { CalendarIcon } from "lucide-react"
+import { useForm } from "react-hook-form"
+import { z } from "zod"
 
 import { addFilm } from "@/lib/actions/films"
-import { categories } from "@/lib/categories"
+import { categories, Category } from "@/lib/categories"
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar"
 import {
   Card,
   CardAction,
@@ -16,9 +22,21 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import MultipleSelector from "@/components/ui/multiselect"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 
@@ -29,141 +47,34 @@ interface FilmFormProps {
 }
 
 export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const [state, action, isPending] = useActionState(addFilm, null)
+  const [isPending, startTransition] = useTransition()
 
-  // Form state for live preview
-  const [formData, setFormData] = useState<FilmCreate>({
-    url: editingFilm?.url || "",
-    title: editingFilm?.title || "",
-    description: editingFilm?.description || "",
-    thumbnail: editingFilm?.thumbnail || "",
-    publishedAt: editingFilm?.publishedAt
-      ? new Date(editingFilm.publishedAt).toISOString().split("T")[0]
-      : "",
-    author: editingFilm?.author || "",
-    viewCount: editingFilm?.viewCount || 0,
-    likeCount: editingFilm?.likeCount || 0,
-    categories: editingFilm?.categories || [],
-  })
-
-  const [isLoadingVideoInfo, setIsLoadingVideoInfo] = useState(false)
-  const [videoInfoError, setVideoInfoError] = useState<string | null>(null)
-  const [autoFilledFields, setAutoFilledFields] = useState<Set<string>>(
-    new Set()
-  )
-
-  const handleInputChange = (
-    field: string,
-    value: string | number | string[]
-  ) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-    // Remove auto-filled status when user manually edits a field
-    if (autoFilledFields.has(field)) {
-      setAutoFilledFields((prev) => {
-        const newSet = new Set(prev)
-        newSet.delete(field)
-        return newSet
-      })
-    }
-  }
-
-  const handleUrlChange = async (url: string) => {
-    handleInputChange("url", url)
-
-    // Check if the URL looks like a YouTube URL
-    if (url && (url.includes("youtube.com") || url.includes("youtu.be"))) {
-      setIsLoadingVideoInfo(true)
-      setVideoInfoError(null)
-      try {
-        const response = await fetch("/api/youtube", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ url }),
-        })
-
-        if (response.ok) {
-          const { filmData } = await response.json()
-
-          // Auto-fill the form with the video data
-          setFormData((prev) => ({
-            ...prev,
-            url: url,
-            title: filmData.title,
-            description: filmData.description || "",
-            thumbnail: filmData.thumbnail || "",
-            publishedAt: new Date(filmData.publishedAt)
-              .toISOString()
-              .split("T")[0],
-            author: filmData.author || "",
-            viewCount: filmData.viewCount || 0,
-            likeCount: filmData.likeCount || 0,
-          }))
-
-          // Mark fields as auto-filled
-          setAutoFilledFields(
-            new Set([
-              "title",
-              "description",
-              "thumbnail",
-              "publishedAt",
-              "author",
-              "viewCount",
-              "likeCount",
-            ])
-          )
-        } else {
-          const errorText = await response.text()
-          console.error("Failed to fetch YouTube video info:", errorText)
-          setVideoInfoError(
-            "Failed to fetch video information. Please check the URL or try again."
-          )
-        }
-      } catch (error) {
-        console.error("Failed to fetch YouTube video info:", error)
-        setVideoInfoError(
-          "Network error. Please check your connection and try again."
-        )
-      } finally {
-        setIsLoadingVideoInfo(false)
-      }
-    } else if (
-      url &&
-      !url.includes("youtube.com") &&
-      !url.includes("youtu.be")
-    ) {
-      // Clear any previous auto-fill data if it's not a YouTube URL
-      setVideoInfoError(null)
-      setAutoFilledFields(new Set())
-    }
-  }
-
-  function onDelete() {}
-
-  function resetForm() {
-    setFormData({
+  const form = useForm<z.infer<typeof filmSchema>>({
+    resolver: zodResolver(filmSchema),
+    defaultValues: {
       url: "",
       title: "",
       description: "",
       thumbnail: "",
-      publishedAt: "",
+      publishedAt: new Date(),
       author: "",
-      viewCount: 0,
-      likeCount: 0,
+      viewCount: undefined,
+      likeCount: undefined,
       categories: [],
-    })
-    setAutoFilledFields(new Set())
-    setVideoInfoError(null)
-  }
+    },
+  })
 
-  const hasAutoFilledData = autoFilledFields.size > 0
+  const watchedValues = form.watch()
+
+  function onSubmit(values: z.infer<typeof filmSchema>) {
+    startTransition(async () => {
+      await addFilm(values)
+    })
+  }
 
   return (
     <>
-      <Card className="relative z-10 m-6 h-fit">
+      <Card className="relative z-10 m-6 h-fit w-full max-w-md">
         <CardHeader>
           <CardTitle>Add a new film</CardTitle>
           <CardDescription>
@@ -171,320 +82,252 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
           </CardDescription>
           {editingFilm && (
             <CardAction>
-              <Button variant="destructive" onClick={onDelete}>
+              <Button variant="destructive" onClick={() => {}}>
                 Delete
               </Button>
             </CardAction>
           )}
         </CardHeader>
-        <form action={action}>
-          {editingFilm && (
-            <input type="hidden" name="id" value={editingFilm.id} />
-          )}
-          {/* Hidden inputs to pass current form state to server */}
-          <input type="hidden" name="url" value={formData.url} />
-          <input type="hidden" name="title" value={formData.title} />
-          <input
-            type="hidden"
-            name="description"
-            value={formData.description}
-          />
-          <input type="hidden" name="thumbnail" value={formData.thumbnail} />
-          <input
-            type="hidden"
-            name="publishedAt"
-            value={formData.publishedAt}
-          />
-          <input type="hidden" name="author" value={formData.author} />
-          <input type="hidden" name="views" value={formData.viewCount} />
-          <input type="hidden" name="likeCount" value={formData.likeCount} />
-          {formData.categories.map((category, index) => (
-            <input
-              key={index}
-              type="hidden"
-              name="categories"
-              value={category}
-            />
-          ))}
-          <CardContent className="flex flex-row gap-4">
-            <div className="flex max-w-lg flex-col gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="url">URL</Label>
-                <Input
-                  id="url"
-                  placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-                  value={formData.url}
-                  onChange={(e) => handleUrlChange(e.target.value)}
-                  disabled={isLoadingVideoInfo}
-                />
-                {isLoadingVideoInfo && (
-                  <p className="text-muted-foreground animate-pulse text-sm">
-                    🔄 Fetching video information...
-                  </p>
-                )}
-                {hasAutoFilledData &&
-                  !isLoadingVideoInfo &&
-                  !videoInfoError && (
-                    <p className="text-sm text-green-600">
-                      ✅ Video information loaded successfully
-                    </p>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <CardContent className="flex flex-row gap-4">
+              <div className="grid w-full gap-4">
+                <FormField
+                  control={form.control}
+                  name="url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel required>Link to film</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="url"
+                          autoComplete="off"
+                          placeholder="https://www.youtube.com/..."
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                {videoInfoError && (
-                  <p className="text-destructive text-sm">
-                    ⚠️ {videoInfoError}
-                  </p>
-                )}
-                <p className="text-destructive text-xs" role="alert">
-                  {state?.errors && "url" in state.errors
-                    ? state.errors.url
-                    : ""}
-                </p>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="categories">Categories</Label>
-                <MultipleSelector
-                  commandProps={{
-                    label: "Select categories",
-                  }}
-                  defaultOptions={categories}
-                  placeholder="Select categories"
-                  emptyIndicator={
-                    <p className="text-center text-sm">No results found</p>
-                  }
-                  value={formData.categories.map((cat) => ({
-                    label: cat,
-                    value: cat,
-                  }))}
-                  onChange={(options) =>
-                    handleInputChange(
-                      "categories",
-                      options.map((opt) => opt.value)
-                    )
-                  }
                 />
-                <p className="text-destructive text-xs" role="alert">
-                  {state?.errors && "categories" in state.errors
-                    ? state.errors.categories
-                    : ""}
-                </p>
-              </div>
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card text-muted-foreground px-2">
-                    Auto Generated
-                  </span>
-                </div>
-              </div>
+                <FormField
+                  control={form.control}
+                  name="categories"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel required>Categories</FormLabel>
+                      <FormControl>
+                        <MultipleSelector
+                          value={
+                            field.value
+                              ?.map((val) =>
+                                categories.find((cat) => cat.value === val)
+                              )
+                              .filter(
+                                (cat): cat is Category => cat !== undefined
+                              ) || []
+                          }
+                          onChange={(options) =>
+                            field.onChange(
+                              options.map((option) => option.value)
+                            )
+                          }
+                          defaultOptions={categories}
+                          commandProps={{
+                            label: "Select categories",
+                          }}
+                          placeholder="Select categories"
+                          hidePlaceholderWhenSelected
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <div className="grid gap-2">
-                <Label htmlFor="title">
-                  Title
-                  {autoFilledFields.has("title") && (
-                    <span className="text-muted-foreground ml-2 text-xs">
-                      (auto-filled)
-                    </span>
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel required>Title</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter film title" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                </Label>
-                <Input
-                  id="title"
-                  placeholder="Page title"
-                  value={formData.title}
-                  onChange={(e) => handleInputChange("title", e.target.value)}
                 />
-                <p className="text-destructive text-xs" role="alert">
-                  {state?.errors && "title" in state.errors
-                    ? state.errors.title
-                    : ""}
-                </p>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="description">
-                  Description
-                  {autoFilledFields.has("description") && (
-                    <span className="text-muted-foreground ml-2 text-xs">
-                      (auto-filled)
-                    </span>
+
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel required>Description</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Enter film description"
+                          className="min-h-[80px]"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                </Label>
-                <div className="flex items-center gap-2">
-                  <Textarea
-                    id="description"
-                    placeholder="Film description"
-                    value={formData.description}
-                    onChange={(e) =>
-                      handleInputChange("description", e.target.value)
-                    }
-                  />
-                </div>
-                <p className="text-destructive text-xs" role="alert">
-                  {state?.errors && "description" in state.errors
-                    ? state.errors.description
-                    : ""}
-                </p>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="thumbnail">
-                  Thumbnail
-                  {autoFilledFields.has("thumbnail") && (
-                    <span className="text-muted-foreground ml-2 text-xs">
-                      (auto-filled)
-                    </span>
-                  )}
-                </Label>
-                <Input
-                  id="thumbnail"
-                  placeholder="https://example.com/thumbnail.jpg"
-                  value={formData.thumbnail}
-                  onChange={(e) =>
-                    handleInputChange("thumbnail", e.target.value)
-                  }
                 />
-                <p className="text-destructive text-xs" role="alert">
-                  {state?.errors && "thumbnail" in state.errors
-                    ? state.errors.thumbnail
-                    : ""}
-                </p>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="publishedAt">
-                  Published Date
-                  {autoFilledFields.has("publishedAt") && (
-                    <span className="text-muted-foreground ml-2 text-xs">
-                      (auto-filled)
-                    </span>
+
+                <FormField
+                  control={form.control}
+                  name="author"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel required>Author</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Author name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                </Label>
-                <Input
-                  id="publishedAt"
-                  type="date"
-                  value={formData.publishedAt}
-                  onChange={(e) =>
-                    handleInputChange("publishedAt", e.target.value)
-                  }
                 />
-                <p className="text-destructive text-xs" role="alert">
-                  {state?.errors && "publishedAt" in state.errors
-                    ? state.errors.publishedAt
-                    : ""}
-                </p>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="author">
-                  Author
-                  {autoFilledFields.has("author") && (
-                    <span className="text-muted-foreground ml-2 text-xs">
-                      (auto-filled)
-                    </span>
+
+                <FormField
+                  control={form.control}
+                  name="publishedAt"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel required>Published Date</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-[240px] pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, "PPP")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            captionLayout="dropdown"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                </Label>
-                <Input
-                  id="author"
-                  placeholder="Author name"
-                  value={formData.author}
-                  onChange={(e) => handleInputChange("author", e.target.value)}
                 />
-                <p className="text-destructive text-xs" role="alert">
-                  {state?.errors && "author" in state.errors
-                    ? state.errors.author
-                    : ""}
-                </p>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <div className="grid gap-2">
-                  <Label htmlFor="views">
-                    Views
-                    {autoFilledFields.has("viewCount") && (
-                      <span className="text-muted-foreground ml-2 text-xs">
-                        (auto-filled)
-                      </span>
+
+                <FormField
+                  control={form.control}
+                  name="thumbnail"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Thumbnail URL</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="url"
+                          placeholder="https://example.com/thumbnail.jpg"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="viewCount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>View Count</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="0"
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(
+                                e.target.value
+                                  ? parseInt(e.target.value)
+                                  : undefined
+                              )
+                            }
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )}
-                  </Label>
-                  <Input
-                    id="views"
-                    type="number"
-                    placeholder="1000"
-                    value={formData.viewCount || ""}
-                    onChange={(e) =>
-                      handleInputChange(
-                        "viewCount",
-                        parseInt(e.target.value) || 0
-                      )
-                    }
                   />
-                  <p className="text-destructive text-xs" role="alert">
-                    {state?.errors && "viewCount" in state.errors
-                      ? state.errors.viewCount
-                      : ""}
-                  </p>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="likeCount">
-                    Likes
-                    {autoFilledFields.has("likeCount") && (
-                      <span className="text-muted-foreground ml-2 text-xs">
-                        (auto-filled)
-                      </span>
+
+                  <FormField
+                    control={form.control}
+                    name="likeCount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Like Count</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="0"
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(
+                                e.target.value
+                                  ? parseInt(e.target.value)
+                                  : undefined
+                              )
+                            }
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )}
-                  </Label>
-                  <Input
-                    id="likeCount"
-                    type="number"
-                    placeholder="1000"
-                    value={formData.likeCount || ""}
-                    onChange={(e) =>
-                      handleInputChange(
-                        "likeCount",
-                        parseInt(e.target.value) || 0
-                      )
-                    }
                   />
-                  <p className="text-destructive text-xs" role="alert">
-                    {state?.errors && "likeCount" in state.errors
-                      ? state.errors.likeCount
-                      : ""}
-                  </p>
                 </div>
               </div>
+            </CardContent>
+            <div className="py-4">
+              <Separator />
             </div>
-          </CardContent>
-          <div className="py-4">
-            <Separator />
-          </div>
-          <CardFooter className="flex-col gap-2">
-            {!editingFilm ? (
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={resetForm}
-              >
-                Reset Form
-              </Button>
-            ) : (
+            <CardFooter className="flex-col gap-2">
               <Button
                 variant="outline"
                 className="w-full"
-                onClick={() => router.push(pathname)}
+                onClick={() => form.reset()}
               >
                 Cancel
               </Button>
-            )}
-            <Button type="submit" className="w-full" disabled={isPending}>
-              {isPending
-                ? editingFilm
-                  ? "Updating..."
-                  : "Adding..."
-                : editingFilm
-                  ? "Update Film"
-                  : "Add Film"}
-            </Button>
-          </CardFooter>
-        </form>
+              <Button type="submit" className="w-full" disabled={isPending}>
+                {isPending
+                  ? editingFilm
+                    ? "Updating..."
+                    : "Adding..."
+                  : editingFilm
+                    ? "Update Film"
+                    : "Add Film"}
+              </Button>
+            </CardFooter>
+          </form>
+        </Form>
       </Card>
-      <FilmPreview film={formData} />
+      <FilmPreview film={watchedValues} />
     </>
   )
 }

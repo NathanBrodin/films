@@ -132,11 +132,11 @@ export type Film = InferSelectModel<typeof films>
 export type Review = InferSelectModel<typeof reviews>
 
 export const filmSchema = z.object({
-  url: z.string().min(1, "URL is required").url("Please enter a valid URL"),
+  url: z.url("Please enter a valid URL"),
   title: z.string().min(1, "Title is required").trim(),
   description: z.string(),
   thumbnail: z.string().optional(),
-  publishedAt: z.string().date(),
+  publishedAt: z.date(),
   author: z.string(),
   viewCount: z.number().optional(),
   likeCount: z.number().optional(),
