@@ -18,7 +18,7 @@ export async function addFilm(formData: z.infer<typeof filmSchema>) {
     throw new Error("Only authenticated users can add a film")
 
   try {
-    await db.insert(films).values({
+    const res = await db.insert(films).values({
       title: formData.title.trim(),
       url: formData.url,
       description: formData.description,
@@ -32,6 +32,7 @@ export async function addFilm(formData: z.infer<typeof filmSchema>) {
     })
 
     revalidateTag("films")
+    return res.lastInsertRowid
   } catch (e) {
     console.error("Error adding film:", e)
     return { errors: { general: ["Failed to add film"] } }

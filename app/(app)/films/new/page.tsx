@@ -21,7 +21,7 @@ export default async function NewFilm() {
             <h3>Only authenticated users can add a film</h3>
             <CardFooter className="mt-4 items-center justify-center gap-2">
               <Button asChild>
-                <Link href="/log-in">Log in</Link>
+                <Link href="/sign-in">Sign in</Link>
               </Button>
               <Button variant="secondary" asChild>
                 <Link href="/">Go back home</Link>

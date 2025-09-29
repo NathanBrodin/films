@@ -1,6 +1,7 @@
 "use client"
 
 import { useTransition } from "react"
+import { useRouter } from "next/navigation"
 import { Film, filmSchema } from "@/db/schema"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { format } from "date-fns"
@@ -50,6 +51,7 @@ interface FilmFormProps {
 }
 
 export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [isFetchingPending, startFetchingTransition] = useTransition()
 
@@ -103,8 +105,8 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
   function onSubmit(values: z.infer<typeof filmSchema>) {
     startTransition(async () => {
       try {
-        await addFilm(values)
-        toast.success("Film added successfully!")
+        const filmId = await addFilm(values)
+        router.push(`/films/${filmId}`)
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : "Failed to add film"
@@ -160,7 +162,7 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
                   name="categories"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel required>Categories</FormLabel>
+                      <FormLabel>Categories</FormLabel>
                       <FormControl>
                         <MultipleSelector
                           value={
@@ -213,7 +215,7 @@ export function FilmForm({ editingFilm: editingFilm }: FilmFormProps) {
                       <FormControl>
                         <Textarea
                           placeholder="Enter film description"
-                          className="min-h-[80px]"
+                          className="max-h-[10.5rem] min-h-[80px]"
                           {...field}
                         />
                       </FormControl>

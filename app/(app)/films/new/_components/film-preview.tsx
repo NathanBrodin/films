@@ -83,7 +83,7 @@ export function FilmPreview({ film }: { film: FilmCreate }) {
           <Diamond bottom right />
         </div>
         <div className="px-4 sm:px-6 sm:py-4">
-          <p className="text-muted-foreground leading-relaxed">
+          <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
             {film.description || "No description provided."}
           </p>
         </div>

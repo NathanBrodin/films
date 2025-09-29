@@ -80,7 +80,7 @@ export default async function FilmPage({ params }: FilmPageProps) {
           className="object-cover object-center"
         />
       </section>
-      <section>
+      <section className="mb-16">
         <div className="border-grid relative inline-flex w-full items-center gap-10 border-b border-dashed px-4 py-2 sm:px-6 sm:py-4">
           <div className="flex flex-col gap-1 opacity-30">
             <p className="text-muted-foreground font-mono text-xs">Ratings</p>
@@ -99,8 +99,14 @@ export default async function FilmPage({ params }: FilmPageProps) {
           <Diamond bottom right />
         </div>
         <div className="px-4 sm:px-6 sm:py-4">
-          <p className="text-muted-foreground leading-relaxed">
+          <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
             {film.description}
+          </p>
+        </div>
+        <div>
+          <p>
+            Added by{" "}
+            <Link href={`/users/${film.createdBy}`}>{film.createdBy}</Link>
           </p>
         </div>
       </section>

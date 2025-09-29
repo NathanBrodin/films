@@ -5,7 +5,7 @@ import z from "zod"
 // Auth
 export const user = sqliteTable("user", {
   id: text("id").primaryKey(),
-  name: text("name").notNull(),
+  name: text("name").notNull().unique(),
   email: text("email").notNull().unique(),
   emailVerified: integer("email_verified", { mode: "boolean" })
     .default(false)
@@ -80,8 +80,8 @@ export const verification = sqliteTable("verification", {
 // App
 export const films = sqliteTable("films", {
   id: int().primaryKey({ autoIncrement: true }),
-  title: text("title").notNull(),
-  url: text("url").notNull(),
+  title: text("title").notNull().unique(),
+  url: text("url").notNull().unique(),
   description: text("description"),
   thumbnail: text("thumbnail"),
   publishedAt: integer("published_at", { mode: "timestamp" }),
@@ -140,7 +140,7 @@ export const filmSchema = z.object({
   author: z.string().min(1, "Author is required"),
   viewCount: z.number().optional(),
   likeCount: z.number().optional(),
-  categories: z.array(z.string()).min(1, "At least one category is required"),
+  categories: z.array(z.string()),
 })
 
 export type FilmCreate = z.infer<typeof filmSchema>
