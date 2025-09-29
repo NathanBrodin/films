@@ -9,8 +9,19 @@ import { toast } from "sonner"
 import { z } from "zod"
 
 import { updateUser } from "@/lib/actions/users"
+import { authClient } from "@/lib/auth-client"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { AnimatedState } from "@/components/ui/animate-state"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -52,8 +63,6 @@ export function UserForm({ user }: UserFormProps) {
     },
   })
 
-  const watchedImage = form.watch("image")
-
   function onSubmit(values: z.infer<typeof userSchema>) {
     startTransition(async () => {
       try {
@@ -66,6 +75,20 @@ export function UserForm({ user }: UserFormProps) {
         toast.error(errorMessage)
       }
     })
+  }
+
+  async function onDeleteUser() {
+    const { data, error } = await authClient.deleteUser()
+
+    if (error) {
+      toast.error(
+        "Failed to delete account, you are stuck with me (I'm kidding, it's a real error)"
+      )
+    }
+
+    if (data) {
+      router.push("/")
+    }
   }
 
   return (
@@ -195,6 +218,32 @@ export function UserForm({ user }: UserFormProps) {
                   </FormItem>
                 )}
               />
+            </div>
+            <Separator />
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Danger zone</h3>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline">Delete account</Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      Are you absolutely sure?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      No please don&apos;t do that, Films is the best app ever,
+                      there is literally no reasons to delete your account.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={onDeleteUser}>
+                      Continue
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </CardContent>
           <div className="w-full py-6">
