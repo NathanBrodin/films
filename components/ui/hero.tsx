@@ -26,6 +26,10 @@ function HeroHeading({ className, ...props }: React.ComponentProps<"h1">) {
   return <h1 className={cn("max-w-2xl text-center", className)} {...props} />
 }
 
+function SmallHeroHeading({ className, ...props }: React.ComponentProps<"h2">) {
+  return <h2 className={cn("max-w-2xl text-center", className)} {...props} />
+}
+
 function HeroDescription({ className, ...props }: React.ComponentProps<"p">) {
   return (
     <p
@@ -50,4 +54,4 @@ function HeroActions({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
-export { HeroActions, Hero, HeroDescription, HeroHeading }
+export { HeroActions, Hero, HeroDescription, HeroHeading, SmallHeroHeading }

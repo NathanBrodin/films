@@ -1,5 +1,6 @@
 import { headers } from "next/headers"
 import Link from "next/link"
+import { UsersIcon } from "lucide-react"
 
 import { auth } from "@/lib/auth"
 import {
@@ -42,15 +43,15 @@ export async function Account() {
             </div>
             <Divider />
             <ul className="flex w-full flex-col py-1">
-              {/*<li>
+              <li>
                 <Link
-                  href="/user"
+                  href="/account"
                   className="group hover:bg-offgray-100/50 dark:hover:bg-offgray-500/10 inline-flex h-8 w-full items-center justify-start gap-2 rounded-sm border border-transparent px-1 text-sm tracking-tight text-nowrap transition-colors duration-75 select-none disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <UsersIcon className="text-primary size-4" />
                   My Account
                 </Link>
-              </li>*/}
+              </li>
               <li>
                 <SignOut />
               </li>

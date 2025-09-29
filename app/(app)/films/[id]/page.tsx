@@ -5,6 +5,7 @@ import { notFound } from "next/navigation"
 import { format } from "date-fns"
 
 import { getFilmById } from "@/lib/actions/films"
+import { getUserNameById } from "@/lib/actions/users"
 import { Lines } from "@/components/ui/backgrounds"
 import { Diamond } from "@/components/ui/diamond"
 import { SectionDivider } from "@/components/ui/separator"
@@ -26,6 +27,8 @@ export default async function FilmPage({ params }: FilmPageProps) {
   if (!film) {
     notFound()
   }
+
+  const userName = await getUserNameById(film.createdBy)
 
   return (
     <>
@@ -105,8 +108,7 @@ export default async function FilmPage({ params }: FilmPageProps) {
         </div>
         <div>
           <p>
-            Added by{" "}
-            <Link href={`/users/${film.createdBy}`}>{film.createdBy}</Link>
+            Added by <Link href={`/users/${userName}`}>{userName}</Link>
           </p>
         </div>
       </section>

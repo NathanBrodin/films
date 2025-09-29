@@ -11,6 +11,9 @@ export const user = sqliteTable("user", {
     .default(false)
     .notNull(),
   image: text("image"),
+  bio: text("bio"),
+  instagram: text("instagram"),
+  website: text("website"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .defaultNow()
     .notNull(),
@@ -128,6 +131,7 @@ export const reviews = sqliteTable("reviews", {
     .notNull(),
 })
 
+export type User = InferSelectModel<typeof user>
 export type Film = InferSelectModel<typeof films>
 export type Review = InferSelectModel<typeof reviews>
 
@@ -152,3 +156,26 @@ export const reviewSchema = z.object({
   review: z.string().optional(),
   watchList: z.boolean(),
 })
+
+export const userSchema = z.object({
+  name: z.string().min(1, "Name is required").trim(),
+  email: z.string().email("Please enter a valid email"),
+  bio: z.string().max(500, "Bio must be 500 characters or less").optional(),
+  instagram: z
+    .string()
+    .url("Please enter a valid Instagram URL")
+    .optional()
+    .or(z.literal("")),
+  website: z
+    .string()
+    .url("Please enter a valid website URL")
+    .optional()
+    .or(z.literal("")),
+  image: z
+    .string()
+    .url("Please enter a valid image URL")
+    .optional()
+    .or(z.literal("")),
+})
+
+export type UserUpdate = z.infer<typeof userSchema>
